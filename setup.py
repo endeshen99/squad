@@ -75,9 +75,8 @@ def download(args):
 
 
 def word_tokenize(sent):
-    return tokenizer.tokenize(sent)
-    # doc = nlp(sent)
-    # return [token.text for token in doc]
+    doc = nlp(sent)
+    return [token.text for token in doc]
 
 
 def convert_idx(text, tokens):
@@ -104,9 +103,9 @@ def process_file(filename, data_type, word_counter, char_counter):
             for para in article["paragraphs"]:
                 context = para["context"].replace(
                     "''", '" ').replace("``", '" ')
-                context_tokens = word_tokenize(context)
+                context_tokens = tokenizer.tokenize(context)
                 context_chars = [list(token) for token in context_tokens]
-                spans = convert_idx(context, context_tokens)
+                spans = convert_idx(context, word_tokenize(context))
                 for token in context_tokens:
                     word_counter[token] += len(para["qas"])
                     for char in token:
@@ -148,7 +147,6 @@ def process_file(filename, data_type, word_counter, char_counter):
                                                  "spans": spans,
                                                  "answers": answer_texts,
                                                  "uuid": qa["id"]}
-                    print(example, eval_examples)
         print(f"{len(examples)} questions in total")
     return examples, eval_examples
 
@@ -215,9 +213,8 @@ def convert_to_features(args, data, word2idx_dict, char2idx_dict, is_test):
 
     def _get_word(word):
         for each in (word, word.lower(), word.capitalize(), word.upper()):
-            return tokenizer.convert_tokens_to_ids(word)
-            # if each in word2idx_dict:
-            #     return word2idx_dict[each]
+            if each in word2idx_dict:
+                return word2idx_dict[each]
         return 1
 
     def _get_char(char):
@@ -288,8 +285,9 @@ def build_features(args, examples, data_type, out_file, word2idx_dict, char2idx_
 
         def _get_word(word):
             for each in (word, word.lower(), word.capitalize(), word.upper()):
-                if each in word2idx_dict:
-                    return word2idx_dict[each]
+                return tokenizer.convert_tokens_to_ids(word)
+                # if each in word2idx_dict:
+                #     return word2idx_dict[each]
             return 1
 
         def _get_char(char):
@@ -303,9 +301,10 @@ def build_features(args, examples, data_type, out_file, word2idx_dict, char2idx_
         ques_char_idx = np.zeros([ques_limit, char_limit], dtype=np.int32)
 
         for i, token in enumerate(example["context_tokens"]):
+            # print(token)
             context_idx[i] = _get_word(token)
+        # print(context_idx)
         context_idxs.append(context_idx)
-        print(context_idxs)
         for i, token in enumerate(example["ques_tokens"]):
             ques_idx[i] = _get_word(token)
         ques_idxs.append(ques_idx)
@@ -357,10 +356,12 @@ def pre_process(args):
     # Process training set and use it to decide on the word/character vocabularies
     word_counter, char_counter = Counter(), Counter()
     train_examples, train_eval = process_file(args.train_file, "train", word_counter, char_counter)
-    word_emb_mat, word2idx_dict = get_embedding(
-        word_counter, 'word', emb_file=args.glove_file, vec_size=args.glove_dim, num_vectors=args.glove_num_vecs)
-    char_emb_mat, char2idx_dict = get_embedding(
-        char_counter, 'char', emb_file=None, vec_size=args.char_dim)
+    word2idx_dict = {}
+    char2idx_dict = {}
+    # word_emb_mat, word2idx_dict = get_embedding(
+    #     word_counter, 'word', emb_file=args.glove_file, vec_size=args.glove_dim, num_vectors=args.glove_num_vecs)
+    # char_emb_mat, char2idx_dict = get_embedding(
+    #     char_counter, 'char', emb_file=None, vec_size=args.char_dim)
 
     # Process dev and test sets
     dev_examples, dev_eval = process_file(args.dev_file, "dev", word_counter, char_counter)
@@ -373,12 +374,12 @@ def pre_process(args):
                                    args.test_record_file, word2idx_dict, char2idx_dict, is_test=True)
         save(args.test_meta_file, test_meta, message="test meta")
 
-    save(args.word_emb_file, word_emb_mat, message="word embedding")
-    save(args.char_emb_file, char_emb_mat, message="char embedding")
+    # save(args.word_emb_file, word_emb_mat, message="word embedding")
+    # save(args.char_emb_file, char_emb_mat, message="char embedding")
     save(args.train_eval_file, train_eval, message="train eval")
     save(args.dev_eval_file, dev_eval, message="dev eval")
-    save(args.word2idx_file, word2idx_dict, message="word dictionary")
-    save(args.char2idx_file, char2idx_dict, message="char dictionary")
+    # save(args.word2idx_file, word2idx_dict, message="word dictionary")
+    # save(args.char2idx_file, char2idx_dict, message="char dictionary")
     save(args.dev_meta_file, dev_meta, message="dev meta")
 
 
