@@ -41,8 +41,9 @@ def main(args):
     torch.cuda.manual_seed_all(args.seed)
 
     # Get embeddings
-    log.info('Loading embeddings...')
-    word_vectors = util.torch_from_json(args.word_emb_file)
+    # log.info('Loading embeddings...')
+    # word_vectors = util.torch_from_json(args.word_emb_file)
+    word_vectors = []
 
     # Get model
     log.info('Building model...')
@@ -73,6 +74,7 @@ def main(args):
 
     # Get data loader
     log.info('Building dataset...')
+    # print(args.train_record_file) #temp
     train_dataset = SQuAD(args.train_record_file, args.use_squad_v2)
     train_loader = data.DataLoader(train_dataset,
                                    batch_size=args.batch_size,
@@ -97,6 +99,8 @@ def main(args):
                 tqdm(total=len(train_loader.dataset)) as progress_bar:
             for cw_idxs, cc_idxs, qw_idxs, qc_idxs, y1, y2, ids in train_loader:
                 # Setup for forward
+                # print(cw_idxs.shape)
+                # print(qw_idxs.shape)
                 cw_idxs = cw_idxs.to(device)
                 qw_idxs = qw_idxs.to(device)
                 batch_size = cw_idxs.size(0)

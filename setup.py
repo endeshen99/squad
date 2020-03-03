@@ -23,6 +23,9 @@ from collections import Counter
 from subprocess import run
 from tqdm import tqdm
 from zipfile import ZipFile
+from transformers import *
+
+tokenizer = BertTokenizer.from_pretrained('bert-base-uncased')
 
 
 def download_url(url, output_path, show_progress=True):
@@ -70,9 +73,11 @@ def download(args):
     print('Downloading spacy language model...')
     run(['python', '-m', 'spacy', 'download', 'en'])
 
+
 def word_tokenize(sent):
-    doc = nlp(sent)
-    return [token.text for token in doc]
+    return tokenizer.tokenize(sent)
+    # doc = nlp(sent)
+    # return [token.text for token in doc]
 
 
 def convert_idx(text, tokens):
@@ -143,6 +148,7 @@ def process_file(filename, data_type, word_counter, char_counter):
                                                  "spans": spans,
                                                  "answers": answer_texts,
                                                  "uuid": qa["id"]}
+                    print(example, eval_examples)
         print(f"{len(examples)} questions in total")
     return examples, eval_examples
 
@@ -197,7 +203,7 @@ def convert_to_features(args, data, word2idx_dict, char2idx_dict, is_test):
 
     def filter_func(example):
         return len(example["context_tokens"]) > para_limit or \
-               len(example["ques_tokens"]) > ques_limit
+            len(example["ques_tokens"]) > ques_limit
 
     if filter_func(example):
         raise ValueError("Context/Questions lengths are over the limit")
@@ -209,8 +215,9 @@ def convert_to_features(args, data, word2idx_dict, char2idx_dict, is_test):
 
     def _get_word(word):
         for each in (word, word.lower(), word.capitalize(), word.upper()):
-            if each in word2idx_dict:
-                return word2idx_dict[each]
+            return tokenizer.convert_tokens_to_ids(word)
+            # if each in word2idx_dict:
+            #     return word2idx_dict[each]
         return 1
 
     def _get_char(char):
@@ -254,8 +261,8 @@ def build_features(args, examples, data_type, out_file, word2idx_dict, char2idx_
             drop = False
         else:
             drop = len(ex["context_tokens"]) > para_limit or \
-                   len(ex["ques_tokens"]) > ques_limit or \
-                   (is_answerable(ex) and
+                len(ex["ques_tokens"]) > ques_limit or \
+                (is_answerable(ex) and
                     ex["y2s"][0] - ex["y1s"][0] > ans_limit)
 
         return drop
@@ -298,7 +305,7 @@ def build_features(args, examples, data_type, out_file, word2idx_dict, char2idx_
         for i, token in enumerate(example["context_tokens"]):
             context_idx[i] = _get_word(token)
         context_idxs.append(context_idx)
-
+        print(context_idxs)
         for i, token in enumerate(example["ques_tokens"]):
             ques_idx[i] = _get_word(token)
         ques_idxs.append(ques_idx)
