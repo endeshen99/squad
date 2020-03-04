@@ -7,7 +7,7 @@ Author:
 import layers
 import torch
 import torch.nn as nn
-from transformers import *
+from transformers import AlbertModel
 
 
 class BiDAF(nn.Module):
@@ -34,7 +34,7 @@ class BiDAF(nn.Module):
     def __init__(self, word_vectors, hidden_size, drop_prob=0.):
         super(BiDAF, self).__init__()
 
-        self.emb = BertModel.from_pretrained('bert-base-uncased')
+        self.emb = AlbertModel.from_pretrained('albert-base-v1')
 
         self.enc = layers.RNNEncoder(input_size=hidden_size,
                                      hidden_size=hidden_size,
@@ -57,10 +57,12 @@ class BiDAF(nn.Module):
         q_mask = torch.zeros_like(qw_idxs) != qw_idxs
         c_len, q_len = c_mask.sum(-1), q_mask.sum(-1)
 
-        print(cw_idxs.shape, qw_idxs.shape)
-        c_emb = self.emb(cw_idxs)[0]         # (batch_size, c_len, hidden_size)
-        q_emb = self.emb(qw_idxs)[0]         # (batch_size, q_len, hidden_size)
-        print(c_emb, q_emb)
+        ##print(cw_idxs.shape, qw_idxs.shape)
+        c_emb, q_emb = [], []
+        with torch.no_grad():
+            c_emb = self.emb(cw_idxs)[0]         # (batch_size, c_len, hidden_size)
+            q_emb = self.emb(qw_idxs)[0]         # (batch_size, q_len, hidden_size)
+        ##print(c_emb, q_emb)
 
         c_enc = self.enc(c_emb, c_len)    # (batch_size, c_len, 2 * hidden_size)
         q_enc = self.enc(q_emb, q_len)    # (batch_size, q_len, 2 * hidden_size)
