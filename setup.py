@@ -23,9 +23,9 @@ from collections import Counter
 from subprocess import run
 from tqdm import tqdm
 from zipfile import ZipFile
-from transformers import *
+from transformers import AlbertTokenizer
 
-tokenizer = BertTokenizer.from_pretrained('bert-base-uncased')
+tokenizer = AlbertTokenizer.from_pretrained('albert-base-v1')
 
 
 def download_url(url, output_path, show_progress=True):

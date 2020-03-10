@@ -36,6 +36,10 @@ class BiDAF(nn.Module):
 
         self.emb = AlbertModel.from_pretrained('albert-base-v1')
 
+        self.emb_bert = layers.Embedding(word_vectors=self.emb.config.hidden_size,
+                                         hidden_size = hidden_size,
+                                         drop_prob=drop_prob)
+
         self.enc = layers.RNNEncoder(input_size=hidden_size,
                                      hidden_size=hidden_size,
                                      num_layers=1,
@@ -58,14 +62,15 @@ class BiDAF(nn.Module):
         c_len, q_len = c_mask.sum(-1), q_mask.sum(-1)
 
         ##print(cw_idxs.shape, qw_idxs.shape)
-        c_emb, q_emb = [], []
-        with torch.no_grad():
-            c_emb = self.emb(cw_idxs)[0]         # (batch_size, c_len, hidden_size)
-            q_emb = self.emb(qw_idxs)[0]         # (batch_size, q_len, hidden_size)
+        c_emb = self.emb(cw_idxs)[0]         # (batch_size, c_len, hidden_size)
+        q_emb = self.emb(qw_idxs)[0]         # (batch_size, q_len, hidden_size)
         ##print(c_emb, q_emb)
 
-        c_enc = self.enc(c_emb, c_len)    # (batch_size, c_len, 2 * hidden_size)
-        q_enc = self.enc(q_emb, q_len)    # (batch_size, q_len, 2 * hidden_size)
+        c_emb_bert = self.emb_bert(c_emb)
+        q_emb_bert = self.emb_bert(q_emb)
+
+        c_enc = self.enc(c_emb_bert, c_len)    # (batch_size, c_len, 2 * hidden_size)
+        q_enc = self.enc(q_emb_bert, q_len)    # (batch_size, q_len, 2 * hidden_size)
 
         att = self.att(c_enc, q_enc,
                        c_mask, q_mask)    # (batch_size, c_len, 8 * hidden_size)
