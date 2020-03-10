@@ -114,7 +114,7 @@ def process_file(filename, data_type, word_counter, char_counter):
                     total += 1
                     ques = qa["question"].replace(
                         "''", '" ').replace("``", '" ')
-                    ques_tokens = word_tokenize(ques)
+                    ques_tokens = tokenizer.tokenize(ques)
                     ques_chars = [list(token) for token in ques_tokens]
                     for token in ques_tokens:
                         word_counter[token] += 1
@@ -283,45 +283,53 @@ def build_features(args, examples, data_type, out_file, word2idx_dict, char2idx_
 
         total += 1
 
-        def _get_word(word):
-            for each in (word, word.lower(), word.capitalize(), word.upper()):
-                return tokenizer.convert_tokens_to_ids(word)
-                # if each in word2idx_dict:
-                #     return word2idx_dict[each]
-            return 1
+        # def _get_word(word):
+        #     print(word)
+        #     for each in (word, word.lower(), word.capitalize(), word.upper()):
+        #         return tokenizer.convert_tokens_to_ids(word)
+        #         # if each in word2idx_dict:
+        #         #     return word2idx_dict[each]
+        #     return 1
 
-        def _get_char(char):
-            if char in char2idx_dict:
-                return char2idx_dict[char]
-            return 1
+        # def _get_char(char):
+        #     if char in char2idx_dict:
+        #         return char2idx_dict[char]
+        #     return 1
 
         context_idx = np.zeros([para_limit], dtype=np.int32)
         context_char_idx = np.zeros([para_limit, char_limit], dtype=np.int32)
         ques_idx = np.zeros([ques_limit], dtype=np.int32)
         ques_char_idx = np.zeros([ques_limit, char_limit], dtype=np.int32)
 
-        for i, token in enumerate(example["context_tokens"]):
-            # print(token)
-            context_idx[i] = _get_word(token)
-        # print(context_idx)
+        # for i, token in enumerate(example["context_tokens"]):
+        #     # print(token)
+        #     context_idx[i] = _get_word(token)
+        # # print(context_idx)
+
+        for i, idx in enumerate(tokenizer.convert_tokens_to_ids(example["context_tokens"])):
+            context_idx[i] = idx
         context_idxs.append(context_idx)
-        for i, token in enumerate(example["ques_tokens"]):
-            ques_idx[i] = _get_word(token)
+
+        # for i, token in enumerate(example["ques_tokens"]):
+        #     ques_idx[i] = _get_word(token)
+
+        for i, idx in enumerate(tokenizer.convert_tokens_to_ids(example["ques_tokens"])):
+            ques_idx[i] = idx
         ques_idxs.append(ques_idx)
 
-        for i, token in enumerate(example["context_chars"]):
-            for j, char in enumerate(token):
-                if j == char_limit:
-                    break
-                context_char_idx[i, j] = _get_char(char)
-        context_char_idxs.append(context_char_idx)
+        # for i, token in enumerate(example["context_chars"]):
+        #     for j, char in enumerate(token):
+        #         if j == char_limit:
+        #             break
+        #         context_char_idx[i, j] = _get_char(char)
+        # context_char_idxs.append(context_char_idx)
 
-        for i, token in enumerate(example["ques_chars"]):
-            for j, char in enumerate(token):
-                if j == char_limit:
-                    break
-                ques_char_idx[i, j] = _get_char(char)
-        ques_char_idxs.append(ques_char_idx)
+        # for i, token in enumerate(example["ques_chars"]):
+        #     for j, char in enumerate(token):
+        #         if j == char_limit:
+        #             break
+        #         ques_char_idx[i, j] = _get_char(char)
+        # ques_char_idxs.append(ques_char_idx)
 
         if is_answerable(example):
             start, end = example["y1s"][-1], example["y2s"][-1]
