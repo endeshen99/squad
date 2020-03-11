@@ -291,10 +291,10 @@ def build_features(args, examples, data_type, out_file, word2idx_dict, char2idx_
         #         #     return word2idx_dict[each]
         #     return 1
 
-        # def _get_char(char):
-        #     if char in char2idx_dict:
-        #         return char2idx_dict[char]
-        #     return 1
+        def _get_char(char):
+            if char in char2idx_dict:
+                return char2idx_dict[char]
+            return 1
 
         context_idx = np.zeros([para_limit], dtype=np.int32)
         context_char_idx = np.zeros([para_limit, char_limit], dtype=np.int32)
@@ -317,19 +317,19 @@ def build_features(args, examples, data_type, out_file, word2idx_dict, char2idx_
             ques_idx[i] = idx
         ques_idxs.append(ques_idx)
 
-        # for i, token in enumerate(example["context_chars"]):
-        #     for j, char in enumerate(token):
-        #         if j == char_limit:
-        #             break
-        #         context_char_idx[i, j] = _get_char(char)
-        # context_char_idxs.append(context_char_idx)
+        for i, token in enumerate(example["context_chars"]):
+            for j, char in enumerate(token):
+                if j == char_limit:
+                    break
+                context_char_idx[i, j] = _get_char(char)
+        context_char_idxs.append(context_char_idx)
 
-        # for i, token in enumerate(example["ques_chars"]):
-        #     for j, char in enumerate(token):
-        #         if j == char_limit:
-        #             break
-        #         ques_char_idx[i, j] = _get_char(char)
-        # ques_char_idxs.append(ques_char_idx)
+        for i, token in enumerate(example["ques_chars"]):
+            for j, char in enumerate(token):
+                if j == char_limit:
+                    break
+                ques_char_idx[i, j] = _get_char(char)
+        ques_char_idxs.append(ques_char_idx)
 
         if is_answerable(example):
             start, end = example["y1s"][-1], example["y2s"][-1]
