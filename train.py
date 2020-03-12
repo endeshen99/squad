@@ -107,9 +107,15 @@ def main(args):
                 optimizer.zero_grad()
 
                 # Forward
-                log_p1, log_p2 = model(cw_idxs, qw_idxs)
+                p1, p2 = model(cw_idxs, qw_idxs)
+                # print(log_p1.shape, log_p2.shape)
                 y1, y2 = y1.to(device), y2.to(device)
-                loss = F.nll_loss(log_p1, y1) + F.nll_loss(log_p2, y2)
+                # print(y1.shape, y2.shape)
+                ignore_idx = p1.size(1)
+                y1.clamp_(0, ignore_idx)
+                y2.clamp_(0, ignore_idx)
+                loss_fct = nn.CrossEntropyLoss(ignore_index=ignore_idx)
+                loss = (loss_fct(p1, y1) + loss_fct(p2, y2)) / 2
                 loss_val = loss.item()
 
                 # Backward

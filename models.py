@@ -90,6 +90,6 @@ class BiDAF(nn.Module):
     start, end = out.split(1, dim=-1)
     start = start.squeeze(-1)
     end = end.squeeze(-1)
-    log_p1 = masked_softmax(start, torch.cat((c_mask, torch.zeros_like(qw_idxs, dtype=torch.uint8)), dim=1), log_softmax=True)
-    log_p2 = masked_softmax(end, torch.cat((c_mask, torch.zeros_like(qw_idxs, dtype=torch.uint8)), dim=1), log_softmax=True)
-    return log_p1, log_p2
+    # log_p1 = masked_softmax(start, torch.cat((c_mask, torch.zeros_like(qw_idxs, dtype=torch.uint8)), dim=1), log_softmax=True)
+    # log_p2 = masked_softmax(end, torch.cat((c_mask, torch.zeros_like(qw_idxs, dtype=torch.uint8)), dim=1), log_softmax=True)
+    return start, end
