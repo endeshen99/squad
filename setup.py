@@ -23,9 +23,18 @@ from collections import Counter
 from subprocess import run
 from tqdm import tqdm
 from zipfile import ZipFile
-from transformers import AlbertTokenizer
+from transformers import *
 
-tokenizer = AlbertTokenizer.from_pretrained('albert-base-v1')
+import unicodedata
+
+
+def strip_accents(s):
+    return ''.join(c for c in unicodedata.normalize('NFD', s)
+                   if unicodedata.category(c) != 'Mn')
+
+
+# tokenizer = AlbertTokenizer.from_pretrained('albert-base-v1')
+tokenizer = BertTokenizer.from_pretrained('bert-base-uncased')
 
 
 def download_url(url, output_path, show_progress=True):
@@ -92,6 +101,26 @@ def convert_idx(text, tokens):
     return spans
 
 
+def convert_idx_bert(text, tokens):
+    text = strip_accents(text.lower())
+    current = 0
+    spans = []
+    for token in tokens:
+        token = token.translate({ord('▁'): None, ord('#'): None})
+        if token == '[UNK]':
+            spans.append((current, current + 1))
+            current += 1
+        else:
+            current = text.find(token, current)
+            if current < 0:
+                # print(tokens, text)
+                print(f"Token {token} cannot be found")
+                raise Exception()
+            spans.append((current, current + len(token)))
+            current += len(token)
+    return spans
+
+
 def process_file(filename, data_type, word_counter, char_counter):
     print(f"Pre-processing {data_type} examples...")
     examples = []
@@ -106,6 +135,7 @@ def process_file(filename, data_type, word_counter, char_counter):
                 context_tokens = tokenizer.tokenize(context)
                 context_chars = [list(token) for token in context_tokens]
                 spans = convert_idx(context, word_tokenize(context))
+                spans_bert = convert_idx_bert(context, context_tokens)
                 for token in context_tokens:
                     word_counter[token] += len(para["qas"])
                     for char in token:
@@ -132,8 +162,26 @@ def process_file(filename, data_type, word_counter, char_counter):
                             if not (answer_end <= span[0] or answer_start >= span[1]):
                                 answer_span.append(idx)
                         y1, y2 = answer_span[0], answer_span[-1]
-                        y1s.append(y1)
-                        y2s.append(y2)
+                        start_idx, end_idx = spans[y1][0], spans[y2][1]
+                        # print(start_idx, end_idx, spans, spans_bert, context)
+                        # if start_idx not in [span[0] for span in reversed(spans_bert)]:
+                        #     print(start_idx, end_idx, spans, spans_bert, context, y1, y2)
+                        y1_bert = 0
+                        for idx, span in enumerate(reversed(spans_bert)):
+                            beginning = span[0]
+                            if start_idx <= beginning:
+                                y1_bert = len(spans_bert) - idx - 1
+                        # y1_bert = len(spans_bert) - [span[0] for span in reversed(spans_bert)].index(start_idx) - 1
+                        y2_bert = 0
+                        for idx, span in enumerate(spans_bert):
+                            ending = span[1]
+                            if end_idx >= ending:
+                                y2_bert = idx
+                        # y2_bert = [span[1] for span in spans_bert].index(end_idx)
+                        y1s.append(y1_bert)
+                        y2s.append(y2_bert)
+                        # print(context[spans_bert[y1_bert][0]:spans_bert[y2_bert][1]])
+                        # print(context[spans[y1][0]:spans[y2][1]])
                     example = {"context_tokens": context_tokens,
                                "context_chars": context_chars,
                                "ques_tokens": ques_tokens,
@@ -145,6 +193,7 @@ def process_file(filename, data_type, word_counter, char_counter):
                     eval_examples[str(total)] = {"context": context,
                                                  "question": ques,
                                                  "spans": spans,
+                                                 "spans_bert": spans_bert,
                                                  "answers": answer_texts,
                                                  "uuid": qa["id"]}
         print(f"{len(examples)} questions in total")

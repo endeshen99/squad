@@ -41,6 +41,7 @@ class SQuAD(data.Dataset):
         data_path (str): Path to .npz file containing pre-processed dataset.
         use_v2 (bool): Whether to use SQuAD 2.0 questions. Otherwise only use SQuAD 1.1.
     """
+
     def __init__(self, data_path, use_v2=True):
         super(SQuAD, self).__init__()
 
@@ -149,6 +150,7 @@ class AverageMeter:
     Adapted from:
         > https://github.com/pytorch/examples/blob/master/imagenet/main.py
     """
+
     def __init__(self):
         self.avg = 0
         self.sum = 0
@@ -177,6 +179,7 @@ class EMA:
         model (torch.nn.Module): Model with parameters whose EMA will be kept.
         decay (float): Decay rate for exponential moving average.
     """
+
     def __init__(self, model, decay):
         self.decay = decay
         self.shadow = {}
@@ -237,6 +240,7 @@ class CheckpointSaver:
             minimizes the metric.
         log (logging.Logger): Optional logger for printing information.
     """
+
     def __init__(self, save_dir, max_checkpoints, metric_name,
                  maximize_metric=False, log=None):
         super(CheckpointSaver, self).__init__()
@@ -491,6 +495,7 @@ def get_logger(log_dir, name):
         See Also:
             > https://stackoverflow.com/questions/38543506
         """
+
         def emit(self, record):
             try:
                 msg = self.format(record)
@@ -627,7 +632,7 @@ def convert_tokens(eval_dict, qa_id, y_start_list, y_end_list, no_answer):
     sub_dict = {}
     for qid, y_start, y_end in zip(qa_id, y_start_list, y_end_list):
         context = eval_dict[str(qid)]["context"]
-        spans = eval_dict[str(qid)]["spans"]
+        spans = eval_dict[str(qid)]["spans_bert"]
         uuid = eval_dict[str(qid)]["uuid"]
         if no_answer and (y_start == 0 or y_end == 0):
             pred_dict[str(qid)] = ''
@@ -635,7 +640,7 @@ def convert_tokens(eval_dict, qa_id, y_start_list, y_end_list, no_answer):
         else:
             if no_answer:
                 y_start, y_end = y_start - 1, y_end - 1
-            print(len(spans), y_start, y_end)
+            # print(len(spans), y_start, y_end)
             start_idx = spans[y_start][0]
             end_idx = spans[y_end][1]
             pred_dict[str(qid)] = context[start_idx: end_idx]
