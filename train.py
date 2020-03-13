@@ -4,9 +4,6 @@ Author:
     Chris Chute (chute@stanford.edu)
 """
 
-import os
-os.environ['CUDA_LAUNCH_BLOCKING'] = "1"
-
 import numpy as np
 import random
 import torch
