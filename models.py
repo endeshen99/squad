@@ -7,7 +7,7 @@ Author:
 import layers
 import torch
 import torch.nn as nn
-from transformers import AlbertModel
+from transformers import *
 from util import masked_softmax
 
 
@@ -35,7 +35,7 @@ class BiDAF(nn.Module):
   def __init__(self, word_vectors, hidden_size, drop_prob=0.):
     super(BiDAF, self).__init__()
     self.num_labels = 2
-    self.emb = AlbertModel.from_pretrained('albert-base-v1')
+    self.emb = BertModel.from_pretrained('bert-base-uncased')
     self.out = nn.Linear(self.emb.config.hidden_size, self.num_labels)
 
     # self.emb_bert = layers.Embedding(word_vectors=self.emb.config.hidden_size,
